@@ -1,46 +1,268 @@
-/* Basic reset for consistent styling */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+.screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
   background-image: url("../images/Background.png");
-  background-size: cover;      /* makes it fill the screen */
-  background-repeat: no-repeat; 
+  background-size: cover;
   background-position: center;
-  background-attachment: fixed; /* optional: keeps image fixed when scrolling */
+  background-repeat: no-repeat;
 }
 
-header {
-    background: #333;
-    color: #fff;
-    padding: 1rem 0;
-    text-align: center;
+/* shared image styles */
+.finch {
+  position: absolute;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-nav a {
-    color: #fff;
-    text-decoration: none;
-    margin: 0 10px;
+.hotspot {
+  position: absolute;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
-main {
-    padding: 2rem;
-    max-width: 800px;
-    margin: auto;
-    background: #fff;
+.back-btn,
+.ui-btn,
+.test-btn {
+  border: none;
+  cursor: pointer;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: bold;
 }
 
-footer {
-    text-align: center;
-    padding: 1rem 0;
-    background: #333;
-    color: #fff;
-    position: fixed; /* Optional: Keep footer at the bottom of the screen */
-    bottom: 0;
-    width: 100%;
+.back-btn {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  background: #222;
+  color: white;
 }
 
+.ui-btn {
+  background: #d8d000;
+  color: #333;
+  box-shadow: 0 3px 0 #8a7f00;
+}
 
+.test-btn {
+  background: #007bff;
+  color: white;
+}
+
+/* HOME PAGE */
+.home-finch {
+  width: 170px;
+  left: 22%;
+  top: 37%;
+}
+
+.menu-image {
+  position: absolute;
+  width: 180px;
+  left: 33%;
+  top: 42%;
+}
+
+.bluetooth-icon {
+  position: absolute;
+  width: 95px;
+  right: 4%;
+  bottom: 4%;
+}
+
+/* invisible button areas over menu image */
+.singleplayer-hotspot {
+  width: 130px;
+  height: 28px;
+  left: 34%;
+  top: 42.5%;
+}
+
+.multiplayer-hotspot {
+  width: 130px;
+  height: 28px;
+  left: 34%;
+  top: 47%;
+}
+
+.bluetooth-hotspot {
+  width: 95px;
+  height: 95px;
+  right: 4%;
+  bottom: 4%;
+  border-radius: 50%;
+}
+
+/* JOIN PAGE */
+/* JOIN PAGE */
+.join-finch {
+  position: absolute;
+  width: 300px;
+  right: 0px;
+  top: -50px;
+}
+
+.join-panel {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  height: 180px;
+}
+
+.join-image {
+  position: absolute;
+  width: 140px;
+  left: 50%;
+  top: 20px;
+  transform: translateX(-50%);
+}
+
+.idbar-image {
+  position: absolute;
+  width: 220px;
+  left: 50%;
+  top: 95px;
+  transform: translateX(-50%);
+}
+
+.room-input {
+  position: absolute;
+  width: 180px;
+  left: 50%;
+  top: 108px;
+  transform: translateX(-50%);
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 15px;
+  outline: none;
+}
+
+/* invisible click zones over the button art */
+.hotspot {
+  position: absolute;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.create-room-hotspot {
+  width: 58px;
+  height: 42px;
+  left: 88px;
+  top: 22px;
+}
+
+.join-room-hotspot {
+  width: 58px;
+  height: 42px;
+  left: 150px;
+  top: 22px;
+}
+
+/* CONTROLS PAGE */
+.top-ui {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pause-btn {
+  margin: 0 auto;
+}
+
+.username-wrap {
+  position: relative;
+  width: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.username-bar {
+  width: 180px;
+}
+
+.username-text {
+  position: absolute;
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+}
+
+.controls-finch {
+  width: 145px;
+  right: 8%;
+  top: 24%;
+}
+
+.controls-center {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wasd-image {
+  width: 180px;
+}
+
+.spacebar-image {
+  width: 200px;
+}
+
+.output-panel {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  width: 420px;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 14px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+#output {
+  margin-bottom: 10px;
+  color: #222;
+  font-size: 14px;
+}
+
+/* responsive help */
+@media (max-width: 900px) {
+  .controls-center {
+    width: 80%;
+  }
+
+  .menu-image {
+    width: 150px;
+  }
+
+  .home-finch {
+    width: 140px;
+  }
+}

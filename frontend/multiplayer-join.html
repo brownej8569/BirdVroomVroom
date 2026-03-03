@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BirdFighting - Join Room</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="screen join-screen">
+
+    <img src="../images/Finch.png" alt="Finch" class="finch join-finch">
+
+    <div class="join-panel">
+      <img src="../images/Join.png" alt="Create or Join Room" class="join-image">
+      <img src="../images/ID Bar.png" alt="Room ID Bar" class="idbar-image">
+
+      <input
+        type="text"
+        id="roomCode"
+        class="room-input"
+        placeholder="Enter Room Code"
+        maxlength="12"
+      >
+
+      <button class="hotspot create-room-hotspot" onclick="createRoom()" aria-label="Create Room"></button>
+      <button class="hotspot join-room-hotspot" onclick="joinRoom()" aria-label="Join Room"></button>
+    </div>
+
+    <button class="back-btn" onclick="goToPage('index.html')">Back</button>
+  </div>
+</body>
+</html>
