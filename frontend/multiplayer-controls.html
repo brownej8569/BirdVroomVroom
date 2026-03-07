@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BirdFighting - Controls</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="screen controls-screen">
+    <div class="top-ui">
+      <button class="ui-btn">SCOREBOARD</button>
+      <button class="ui-btn pause-btn" onclick="pauseGame()">STOP / PAUSE</button>
+      <div class="username-wrap">
+        <img src="../images/ID Bar.png" alt="Username Bar" class="username-bar">
+        <span class="username-text">USERNAME</span>
+      </div>
+    </div>
+
+    <img src="../images/Finch.png" alt="Finch" class="finch controls-finch">
+
+    <div class="controls-center">
+      <img src="../images/WASD.png" alt="WASD Controls" class="wasd-image">
+      <img src="../images/Spacebar.png" alt="Spacebar" class="spacebar-image">
+    </div>
+
+    <div class="output-panel">
+      <p id="output">Ready...</p>
+      <button class="test-btn" onclick="runScript('first_finch_test')">Run Finch Test</button>
+    </div>
+
+    <button class="back-btn" onclick="goToPage('index.html')">Back</button>
+  </div>
+</body>
+</html>
