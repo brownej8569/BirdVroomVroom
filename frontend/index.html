@@ -1,131 +1,21 @@
-<!-- Hey! This is the main .html file for all of the frontend website stuff. It's 
-     essentially a combination of clunkily written html and StackOverflow
-     responses that I eventually figured out how to work. Let me know if there are
-     any questions.
--->
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Skipper</title>
-    <!--<link rel="stylesheet" href="styles.css"> -->
-    
-    <meta charset="UTF-8">
-    <title>Python Backend Button</title>
-        <style>
-        :root {
-            --bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text: #212529;
-            --accent: #007bff;
-            --border: #e9ecef;
-        }   
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Inter', -apple-system, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            background: var(--card-bg);
-            padding: 2.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            width: 100%;
-            max-width: 500px;
-            text-align: center;
-        }
-
-        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
-
-        button {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
-            width: 100%;
-            margin-bottom: 1rem;
-        }
-
-        button:hover { opacity: 0.9; }
-        button:active { transform: scale(0.98); }
-
-        #output {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 1rem;
-            font-family: monospace;
-            font-size: 0.9rem;
-            text-align: left;
-            min-height: 80px;
-        }
-        h2 { 
-        font-size: 0.8rem; 
-        text-transform: uppercase; 
-        letter-spacing: 0.05em; 
-        color: #6c757d; 
-        margin-top: 2rem;
-        }
-        </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BirdFighting - Home</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
 </head>
-
 <body>
-    <div class="container">
-        <h1>Use WASD to control the finch...</h1>
-        <button onclick="runScript('controller')">Run First Finch Test</button>
-        <!--<button onclick="runScript('first_finch_test')">Run First Finch Test</button> -->
+  <div class="screen home-screen">
+    <img src="../images/Finch.png" alt="Finch" class="finch home-finch">
+    <img src="../images/Menu.jpg" alt="Menu" class="menu-image">
+    <img src="../images/Bluetooth-1.png" alt="Bluetooth" class="bluetooth-icon">
 
-        <h2>Output:</h2>
-        <pre id="output">Status messages will appear here...</pre>
-    </div>
-    <!--
-    <div class="screen home-screen">
-        <img src="/images/Finch.png" alt="Finch" class="finch home-finch">
-        <img src="/images/Menu.jpg" alt="Menu" class="menu-image">
-        <img src="/images/Bluetooth-1.png" alt="Bluetooth" class="bluetooth-icon">
-    
-        <button class="hotspot singleplayer-hotspot" onclick="goToPage('multiplayer-controls.html')" aria-label="Single Player"></button>
-        <button class="hotspot multiplayer-hotspot" onclick="goToPage('multiplayer-join.html')" aria-label="Multiplayer"></button>
-        <button class="hotspot bluetooth-hotspot" onclick="showBluetoothMessage()" aria-label="Bluetooth"></button>
-    </div>
-    -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script>
-        const socket = io();
-
-        let currkeys = {};
-
-        document.addEventListener('keydown', (e) => {
-            if (!currkeys[e.key]) {
-                currkeys[e.key] = true;
-
-                socket.emit("control_stuff", {
-                    currkey: e.key,
-                    pressed: true
-                });
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            currkeys[e.key] = false;
-
-            socket.emit("control_stuff", {
-                currkey: e.key,
-                pressed: false
-            }); 
-        });
-    </script>
+    <button class="hotspot singleplayer-hotspot" onclick="goToPage('multiplayer-controls.html')" aria-label="Single Player"></button>
+    <button class="hotspot multiplayer-hotspot" onclick="goToPage('multiplayer-join.html')" aria-label="Multiplayer"></button>
+    <button class="hotspot bluetooth-hotspot" onclick="showBluetoothMessage()" aria-label="Bluetooth"></button>
+  </div>
 </body>
 </html>
-
