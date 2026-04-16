@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import subprocess
 import sys
 import threading
 import time
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 from flask_socketio import SocketIO
 
 try:
@@ -24,13 +25,15 @@ app = Flask(
 )
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+_FRONTEND_DIR = pathlib.Path(__file__).parent / "frontend"
+
 
 def _create_finch():
     if Finch is None:
         return None
     try:
         return Finch("A")
-    except Exception:
+    except BaseException:
         return None
 
 
@@ -44,6 +47,7 @@ control_state = {
     "s": False,
     "d": False,
     "shift": False,
+    "space": False,
     "r": False,
 }
 
@@ -60,7 +64,10 @@ def get_data():
 
 @socketio.on("control_stuff")
 def control_stuff(data):
-    key = (data.get("currkey") or "").lower()
+    raw = data.get("currkey")
+    key = (raw or "").lower() if raw != " " else "space"
+    if key == " ":
+        key = "space"
     pressed = bool(data.get("pressed"))
 
     if key in control_state:
@@ -79,7 +86,7 @@ def inputs():
         back = control_state["s"]
         left = control_state["a"]
         right = control_state["d"]
-        boost = control_state["shift"]
+        boost = control_state["shift"] or control_state["space"]
         reset = control_state["r"]
 
         move_speed = 40
@@ -182,6 +189,69 @@ def first_finch_test():
         return jsonify({"status": "error", "message": error_msg}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
+
+
+def _connector_paths():
+    """Typical install locations for Bluebird Connector (Windows)."""
+    return [
+        os.path.join(
+            os.environ.get("ProgramFiles", r"C:\Program Files"),
+            "BirdBrain Technologies",
+            "Bluebird Connector",
+            "Bluebird Connector.exe",
+        ),
+        os.path.join(
+            os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"),
+            "BirdBrain Technologies",
+            "Bluebird Connector",
+            "Bluebird Connector.exe",
+        ),
+    ]
+
+
+@app.route("/open_connector", methods=["POST"])
+def open_connector():
+    """Launch Bluebird Connector from the local machine (localhost dev only)."""
+    for path in _connector_paths():
+        if path and os.path.isfile(path):
+            try:
+                subprocess.Popen([path], close_fds=True)  # noqa: S603
+                return jsonify({"status": "success", "message": f"Started: {path}"})
+            except Exception as e:
+                return jsonify({"status": "error", "message": str(e)}), 500
+    return jsonify(
+        {
+            "status": "error",
+            "message": "Bluebird Connector not found. Install it or open it manually, then refresh.",
+        }
+    ), 404
+
+
+@app.route("/robot/pause", methods=["POST"])
+def robot_pause():
+    """Stop motors / pause — used when Finch is connected to this backend."""
+    if finch is None:
+        return jsonify({"status": "ok", "message": "No Finch on this server session."})
+    try:
+        finch.stop()
+        for k in list(control_state.keys()):
+            control_state[k] = False
+        return jsonify({"status": "success", "message": "Stopped."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/<path:page>")
+def pages(page: str):
+    # Serve other HTML templates by filename (e.g. /multiplayer-join.html).
+    if page.endswith(".html") and (_FRONTEND_DIR / page).is_file():
+        return render_template(page)
+
+    # Serve frontend assets living next to the templates (styles.css, script.js).
+    if page.endswith((".css", ".js")) and (_FRONTEND_DIR / page).is_file():
+        return send_from_directory(_FRONTEND_DIR, page)
+
+    return jsonify({"error": "Not found"}), 404
 
 
 if __name__ == "__main__":

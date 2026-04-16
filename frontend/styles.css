@@ -7,6 +7,14 @@
 body {
   font-family: Arial, sans-serif;
   overflow: hidden;
+  /* Sand tone behind the pixel background so you never see random white gaps */
+  background: #b08a5a;
+  min-height: 100vh;
+}
+
+img {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .screen {
@@ -65,15 +73,38 @@ body {
 /* HOME PAGE */
 .home-finch {
   width: 170px;
-  left: 22%;
-  top: 37%;
+  left: 14%;
+  top: 34%;
 }
 
-.menu-image {
+.menu-buttons {
   position: absolute;
-  width: 180px;
-  left: 33%;
-  top: 42%;
+  left: 40%;
+  top: 34%;
+  width: min(240px, 22vw);
+}
+
+.menu-buttons .menu-image {
+  position: static;
+  width: 100%;
+  display: block;
+  background: transparent;
+}
+
+.menu-buttons .singleplayer-hotspot {
+  position: absolute;
+  left: 8%;
+  top: 32%;
+  width: 84%;
+  height: 20%;
+}
+
+.menu-buttons .multiplayer-hotspot {
+  position: absolute;
+  left: 8%;
+  top: 56%;
+  width: 84%;
+  height: 20%;
 }
 
 .bluetooth-icon {
@@ -81,21 +112,6 @@ body {
   width: 95px;
   right: 4%;
   bottom: 4%;
-}
-
-/* invisible button areas over menu image */
-.singleplayer-hotspot {
-  width: 130px;
-  height: 28px;
-  left: 34%;
-  top: 42.5%;
-}
-
-.multiplayer-hotspot {
-  width: 130px;
-  height: 28px;
-  left: 34%;
-  top: 47%;
 }
 
 .bluetooth-hotspot {
@@ -258,8 +274,12 @@ body {
     width: 80%;
   }
 
-  .menu-image {
-    width: 150px;
+  .menu-buttons {
+    width: min(200px, 40vw);
+  }
+
+  .menu-buttons .menu-image {
+    width: 100%;
   }
 
   .home-finch {

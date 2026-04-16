@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BirdFighting - Multiplayer</title>
+  <title>BirdFighting - Single Player</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
   <script src="script.js" defer></script>
 </head>
 <body>
-  <div class="screen controls-screen" data-control-page="multiplayer">
+  <div class="screen controls-screen" data-control-page="singleplayer">
     <div class="top-ui">
       <button type="button" class="ui-btn" disabled aria-disabled="true">SCOREBOARD</button>
       <button type="button" class="ui-btn pause-btn" onclick="pauseRobot()">STOP / PAUSE</button>
@@ -31,7 +31,7 @@
       <button type="button" class="test-btn" onclick="runScript('first_finch_test')">Run Finch Test</button>
     </div>
 
-    <button type="button" class="back-btn" onclick="goToPage('multiplayer-join.html')">Back</button>
+    <button type="button" class="back-btn" onclick="goToPage('index.html')">Back</button>
   </div>
 </body>
 </html>

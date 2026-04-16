@@ -9,13 +9,33 @@
 </head>
 <body>
   <div class="screen home-screen">
-    <img src="../images/Finch.png" alt="Finch" class="finch home-finch">
-    <img src="../images/Menu.jpg" alt="Menu" class="menu-image">
-    <img src="../images/Bluetooth-1.png" alt="Bluetooth" class="bluetooth-icon">
+    <img src="/images/Finch.png" alt="Finch" class="finch home-finch">
 
-    <button class="hotspot singleplayer-hotspot" onclick="goToPage('multiplayer-controls.html')" aria-label="Single Player"></button>
-    <button class="hotspot multiplayer-hotspot" onclick="goToPage('multiplayer-join.html')" aria-label="Multiplayer"></button>
-    <button class="hotspot bluetooth-hotspot" onclick="showBluetoothMessage()" aria-label="Bluetooth"></button>
+    <div class="menu-buttons">
+      <img src="/images/Menu.jpg" alt="Menu" class="menu-image">
+
+      <button
+        class="hotspot singleplayer-hotspot"
+        type="button"
+        onclick="goToPage('singleplayer-controls.html')"
+        aria-label="Single Player"
+      ></button>
+
+      <button
+        class="hotspot multiplayer-hotspot"
+        type="button"
+        onclick="goToPage('multiplayer-join.html')"
+        aria-label="Multiplayer"
+      ></button>
+    </div>
+
+    <img src="/images/Bluetooth-1.png" alt="Bluetooth" class="bluetooth-icon">
+    <button
+      class="hotspot bluetooth-hotspot"
+      type="button"
+      onclick="openBluetoothConnector()"
+      aria-label="Bluetooth"
+    ></button>
   </div>
 </body>
 </html>
