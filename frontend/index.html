@@ -8,34 +8,46 @@
   <script src="script.js" defer></script>
 </head>
 <body>
-  <div class="screen home-screen">
-    <img src="/images/Finch.png" alt="Finch" class="finch home-finch">
+  <div class="screen" id="home">
+    <main class="home-stage" aria-label="Main menu">
+      <section class="home-cluster" aria-label="Menu cluster">
+        <img
+          class="home-finch"
+          src="/images/First%20Page/Finchrobot.png"
+          alt=""
+          aria-hidden="true"
+        >
 
-    <div class="menu-buttons">
-      <img src="/images/Menu.jpg" alt="Menu" class="menu-image">
+        <div class="menu-stack" aria-label="Menu">
+          <button
+            type="button"
+            class="pixel-btn"
+            onclick="goToPage('singleplayer-controls.html')"
+            aria-label="Singleplayer"
+          >SINGLEPLAYER</button>
 
-      <button
-        class="hotspot singleplayer-hotspot"
-        type="button"
-        onclick="goToPage('singleplayer-controls.html')"
-        aria-label="Single Player"
-      ></button>
+          <button
+            type="button"
+            class="pixel-btn"
+            onclick="goToPage('multiplayer-join.html')"
+            aria-label="Multiplayer"
+          >MULTIPLAYER</button>
+        </div>
+      </section>
+    </main>
 
-      <button
-        class="hotspot multiplayer-hotspot"
-        type="button"
-        onclick="goToPage('multiplayer-join.html')"
-        aria-label="Multiplayer"
-      ></button>
-    </div>
-
-    <img src="/images/Bluetooth-1.png" alt="Bluetooth" class="bluetooth-icon">
     <button
-      class="hotspot bluetooth-hotspot"
       type="button"
-      onclick="openBluetoothConnector()"
+      class="bluetooth-btn"
       aria-label="Bluetooth"
-    ></button>
+    >
+      <img
+        class="bluetooth-img"
+        src="/images/First%20Page/Bluetooth.png"
+        alt=""
+        aria-hidden="true"
+      >
+    </button>
   </div>
 </body>
 </html>

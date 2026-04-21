@@ -6,9 +6,10 @@ import subprocess
 import sys
 import threading
 import time
+import random
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, join_room, leave_room
 
 try:
     # Provided by BirdBrain; may not be available on all dev machines.
@@ -17,15 +18,131 @@ except Exception:
     Finch = None  # type: ignore
 
 
+_ROOT_DIR = pathlib.Path(__file__).parent
+_FRONTEND_DIR = _ROOT_DIR / "frontend"
+
 app = Flask(
     __name__,
-    template_folder="frontend",
-    static_folder="images",
+    template_folder=str(_FRONTEND_DIR),
+    # Images are imported manually into frontend/images/
+    static_folder=str(_FRONTEND_DIR / "images"),
     static_url_path="/images",
 )
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-_FRONTEND_DIR = pathlib.Path(__file__).parent / "frontend"
+# -------------------------
+# Multiplayer (simple rooms)
+# -------------------------
+_MP_LOCK = threading.Lock()
+_MP_ROOMS: dict[str, dict] = {}
+_MP_DISCONNECT_GRACE_S = 15.0
+
+
+def _mp_norm_code(raw: str | None) -> str:
+    """Match frontend: uppercase A–Z / 0–9 only, max 6 chars."""
+    return "".join(ch for ch in (raw or "").upper() if ch.isalnum())[:6]
+
+
+def _mp_generate_code(length: int = 6) -> str:
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return "".join(random.choice(alphabet) for _ in range(length))
+
+
+def _mp_room_snapshot(code: str, you_sid: str | None = None) -> dict:
+    room = _MP_ROOMS.get(code)
+    if not room:
+        return {
+            "code": code,
+            "players": [],
+            "max_players": 3,
+            "host_player_id": None,
+            "connectedCount": 0,
+            "readyConnectedCount": 0,
+            "allReadyConnected": False,
+            "canStart": False,
+            "statusMessage": "Room not found.",
+        }
+
+    players = []
+    for pid, p in room["players"].items():
+        # Consider player "connected" if they have a live sid.
+        players.append(
+            {
+                "player_id": pid,
+                "username": p.get("username") or "",
+                "ready": bool(p.get("ready")),
+                "connected": bool(p.get("sid")),
+                "role": p.get("role") or "guest",
+            }
+        )
+
+    connected = [pl for pl in players if pl["connected"]]
+    connected_count = len(connected)
+    ready_connected_count = sum(1 for pl in connected if pl["ready"])
+    all_ready_connected = connected_count >= 2 and ready_connected_count == connected_count
+    host_pid = room.get("host_player_id")
+    can_start = bool(host_pid and all_ready_connected)
+    if connected_count < 2:
+        status = "Waiting for more players..."
+    elif all_ready_connected:
+        status = "All connected players are ready. Host can start."
+    else:
+        status = "Ready up!"
+
+    return {
+        "code": code,
+        "players": players,
+        "max_players": 3,
+        "host_player_id": host_pid,
+        "connectedCount": connected_count,
+        "readyConnectedCount": ready_connected_count,
+        "allReadyConnected": all_ready_connected,
+        "canStart": can_start,
+        "statusMessage": status,
+    }
+
+
+def _mp_cleanup_room(room: dict) -> None:
+    """Remove players that disconnected beyond grace window."""
+    now = time.time()
+    stale: list[str] = []
+    for pid, p in room["players"].items():
+        sid = p.get("sid")
+        if sid:
+            continue
+        last_seen = float(p.get("last_seen") or 0.0)
+        if now - last_seen >= _MP_DISCONNECT_GRACE_S:
+            stale.append(pid)
+
+    for pid in stale:
+        room["players"].pop(pid, None)
+
+    # Host reassignment if needed
+    host_pid = room.get("host_player_id")
+    if host_pid and host_pid not in room["players"]:
+        players = room["players"]
+        prefer = [pid for pid, p in players.items() if p.get("role") == "host"]
+        if prefer:
+            room["host_player_id"] = prefer[0]
+        else:
+            room["host_player_id"] = next(iter(players.keys()), None)
+
+
+@app.route("/images/<path:filename>")
+def images(filename: str):
+    # Our catch-all route below can otherwise intercept /images/... and 404 it.
+    return send_from_directory(app.static_folder, filename)
+
+
+@app.route("/__debug/routes")
+def debug_routes():
+    return jsonify(
+        {
+            "static_url_path": app.static_url_path,
+            "static_folder": app.static_folder,
+            "rules": sorted([r.rule for r in app.url_map.iter_rules()]),
+        }
+    )
 
 
 def _create_finch():
@@ -62,6 +179,76 @@ def get_data():
     return jsonify({"message": "Hello from the Python backend!"})
 
 
+@app.route("/api/finch/test", methods=["POST"])
+def finch_test():
+    """
+    Lightweight connectivity sanity check for the UI.
+    Must never crash the server if Finch isn't connected.
+    """
+    try:
+        if finch is None:
+            return jsonify({"message": "Finch test: Finch not detected (check USB/Bluetooth)."}), 200
+
+        # Try a couple safe calls; if hardware isn't present this may throw.
+        try:
+            distance = finch.getDistance()
+        except Exception:
+            distance = None
+
+        try:
+            finch.stop()
+        except Exception:
+            pass
+
+        if distance is None:
+            return jsonify({"message": "Finch test: Finch not detected (check USB/Bluetooth)."}), 200
+
+        return jsonify({"message": f"Finch test: OK (distance={distance})."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/mp/create", methods=["POST"])
+def mp_create():
+    print("CREATE ROOM ROUTE HIT")
+    with _MP_LOCK:
+        code = _mp_generate_code(6)
+        for _ in range(10):
+            if code not in _MP_ROOMS:
+                break
+            code = _mp_generate_code(6)
+        _MP_ROOMS[code] = {
+            "created_at": time.time(),
+            "players": {},  # player_id -> {sid, username, ready, role, last_seen}
+            "host_player_id": None,
+        }
+    return jsonify({"code": code}), 200
+
+
+@app.route("/api/mp/exists/<code>", methods=["GET"])
+def mp_exists(code: str):
+    print("JOIN ROOM ROUTE HIT")
+    code = _mp_norm_code(code)
+    with _MP_LOCK:
+        exists = code in _MP_ROOMS
+        if exists:
+            room = _MP_ROOMS.get(code)
+            if room is None:
+                return jsonify({"exists": False, "full": False, "players": 0}), 200
+            _mp_cleanup_room(room)
+            players = room.get("players") or {}
+            count = len(players)
+            connected = sum(1 for p in players.values() if p.get("sid"))
+            # Full only when the room truly cannot accept a new live player:
+            # 3 connected, OR 3 roster slots with at least one still online.
+            # (All-offline 3-slot "ghost" rooms are treated as joinable; mp_join clears them.)
+            full = connected >= 3 or (count >= 3 and connected > 0)
+        else:
+            count = 0
+            full = False
+    return jsonify({"exists": exists, "full": full, "players": count}), 200
+
+
 @socketio.on("control_stuff")
 def control_stuff(data):
     raw = data.get("currkey")
@@ -72,6 +259,183 @@ def control_stuff(data):
 
     if key in control_state:
         control_state[key] = pressed
+
+
+@socketio.on("mp_join")
+def mp_join(data):
+    code = _mp_norm_code(data.get("code"))
+    role = (data.get("role") or "").lower()
+    sid = request.sid
+    player_id = (data.get("playerId") or "").strip()
+    username = (data.get("username") or "").strip()
+
+    if not player_id:
+        socketio.emit("mp_error", {"error": "Missing player id."}, to=sid)
+        return
+
+    with _MP_LOCK:
+        room = _MP_ROOMS.get(code)
+        if not room:
+            socketio.emit("mp_error", {"error": "Room not found."}, to=sid)
+            return
+        _mp_cleanup_room(room)
+
+        players: dict = room["players"]
+        connected_n = sum(1 for p in players.values() if p.get("sid"))
+
+        # Abandoned test room: 3 roster entries but nobody connected — clear so the code works again.
+        if len(players) >= 3 and connected_n == 0:
+            players.clear()
+            room["host_player_id"] = None
+            connected_n = 0
+
+        if player_id not in players:
+            if connected_n >= 3:
+                socketio.emit("mp_error", {"error": "Room is full."}, to=sid)
+                return
+            if len(players) >= 3:
+                socketio.emit("mp_error", {"error": "Room is full."}, to=sid)
+                return
+
+        p = players.get(player_id) or {}
+        p["sid"] = sid
+        p["role"] = role or p.get("role") or "guest"
+        if username:
+            p["username"] = username
+        p["ready"] = bool(p.get("ready", False))
+        p["last_seen"] = time.time()
+        players[player_id] = p
+
+        # Only a client that joined as host may claim host. Guests must never
+        # become host just because they connected before the host's socket.
+        if room.get("host_player_id") is None and role == "host":
+            room["host_player_id"] = player_id
+
+    join_room(code)
+    socketio.emit("mp_room_update", _mp_room_snapshot(code, you_sid=sid), to=code)
+
+
+@socketio.on("mp_leave")
+def mp_leave(data):
+    code = _mp_norm_code(data.get("code"))
+    sid = request.sid
+    player_id = (data.get("playerId") or "").strip()
+    leave_room(code)
+    with _MP_LOCK:
+        room = _MP_ROOMS.get(code)
+        if not room:
+            return
+        _mp_cleanup_room(room)
+
+        if player_id:
+            room["players"].pop(player_id, None)
+        else:
+            # fallback: remove whoever has this sid
+            for pid, p in list(room["players"].items()):
+                if p.get("sid") == sid:
+                    room["players"].pop(pid, None)
+
+        _mp_cleanup_room(room)
+
+        if len(room["players"]) == 0:
+            _MP_ROOMS.pop(code, None)
+            return
+    socketio.emit("mp_room_update", _mp_room_snapshot(code), to=code)
+
+
+@socketio.on("disconnect")
+def mp_disconnect():
+    sid = request.sid
+    emptied: list[str] = []
+    touched: set[str] = set()
+    with _MP_LOCK:
+        for code, room in list(_MP_ROOMS.items()):
+            players: dict = room.get("players") or {}
+            for pid, p in players.items():
+                if p.get("sid") == sid:
+                    # Don't delete immediately; allow reconnect rebind.
+                    p["sid"] = None
+                    p["last_seen"] = time.time()
+                    touched.add(code)
+                    break
+
+            _mp_cleanup_room(room)
+            if len(room.get("players") or {}) == 0:
+                emptied.append(code)
+        for code in emptied:
+            _MP_ROOMS.pop(code, None)
+    for code in touched:
+        socketio.emit("mp_room_update", _mp_room_snapshot(code), to=code)
+
+
+@socketio.on("mp_ready")
+def mp_ready(data):
+    code = _mp_norm_code(data.get("code"))
+    ready = bool(data.get("ready"))
+    sid = request.sid
+    player_id = (data.get("playerId") or "").strip()
+
+    with _MP_LOCK:
+        room = _MP_ROOMS.get(code)
+        if not room:
+            socketio.emit("mp_error", {"error": "Room not found."}, to=sid)
+            return
+        _mp_cleanup_room(room)
+        players: dict = room["players"]
+        if not player_id or player_id not in players:
+            socketio.emit("mp_error", {"error": "Not in room."}, to=sid)
+            return
+        players[player_id]["ready"] = ready
+        players[player_id]["last_seen"] = time.time()
+    socketio.emit("mp_room_update", _mp_room_snapshot(code), to=code)
+
+
+@socketio.on("mp_start_request")
+def mp_start_request(data):
+    code = _mp_norm_code(data.get("code"))
+    sid = request.sid
+    player_id = (data.get("playerId") or "").strip()
+
+    with _MP_LOCK:
+        room = _MP_ROOMS.get(code)
+        if not room:
+            socketio.emit("mp_error", {"error": "Room not found."}, to=sid)
+            return
+        _mp_cleanup_room(room)
+        if room.get("host_player_id") != player_id:
+            socketio.emit("mp_error", {"error": "Only the host can start."}, to=sid)
+            return
+
+        players = list((room.get("players") or {}).values())
+        connected_players = [p for p in players if p.get("sid")]
+        if len(connected_players) < 2:
+            socketio.emit("mp_error", {"error": "Need at least 2 players to start."}, to=sid)
+            return
+        if not all(bool(p.get("ready")) for p in connected_players):
+            socketio.emit("mp_error", {"error": "All connected players must be ready."}, to=sid)
+            return
+
+    socketio.emit("mp_start", {"code": code}, to=code)
+
+
+@socketio.on("mp_set_username")
+def mp_set_username(data):
+    code = _mp_norm_code(data.get("code"))
+    sid = request.sid
+    player_id = (data.get("playerId") or "").strip()
+    username = (data.get("username") or "").strip()
+    with _MP_LOCK:
+        room = _MP_ROOMS.get(code)
+        if not room:
+            return
+        _mp_cleanup_room(room)
+        p = (room.get("players") or {}).get(player_id)
+        if not p:
+            socketio.emit("mp_error", {"error": "Not in room."}, to=sid)
+            return
+        p["username"] = username
+        p["last_seen"] = time.time()
+    socketio.emit("mp_room_update", _mp_room_snapshot(code), to=code)
 
 
 def inputs():
@@ -243,6 +607,10 @@ def robot_pause():
 
 @app.route("/<path:page>")
 def pages(page: str):
+    # Ensure /images/... is always served even if this route matches first.
+    if page.startswith("images/"):
+        return send_from_directory(app.static_folder, page[len("images/") :])
+
     # Serve other HTML templates by filename (e.g. /multiplayer-join.html).
     if page.endswith(".html") and (_FRONTEND_DIR / page).is_file():
         return render_template(page)
@@ -259,4 +627,4 @@ if __name__ == "__main__":
         threading.Thread(target=inputs, daemon=True).start()
         threading.Thread(target=sensors, daemon=True).start()
 
-    socketio.run(app, debug=True, use_reloader=False)
+    socketio.run(app, debug=True, use_reloader=False, allow_unsafe_werkzeug=True)

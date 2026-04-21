@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BirdFighting - Lobby</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="screen multiplayer-lobby-screen">
+    <button
+      type="button"
+      class="pixel-btn pixel-btn--sm nav-back"
+      onclick="goToPage('multiplayer-join.html')"
+      aria-label="Back"
+    >BACK</button>
+
+    <main class="mp-stage" aria-label="Lobby">
+      <section class="sp-topright" aria-label="Finch">
+        <img class="sp-finch" src="/images/Singleplayer/1.png" alt="" aria-hidden="true">
+      </section>
+
+      <section class="mp-lobby-center" aria-label="Room lobby">
+        <div class="mp-lobby-code-label">ROOM CODE</div>
+        <div class="mp-codebar" aria-label="Room code display">
+          <input
+            id="mp-lobby-code"
+            class="mp-code-input"
+            type="text"
+            readonly
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Room code"
+          >
+        </div>
+
+        <div id="mp-lobby-count" class="mp-status mp-lobby-countline" aria-live="polite">0/3 players connected</div>
+
+        <div class="mp-lobby-panel" aria-label="Players and status">
+          <div class="mp-lobby-code-label">YOUR NAME</div>
+          <div class="mp-codebar" aria-label="Username">
+            <input
+              id="mp-lobby-username"
+              class="mp-code-input"
+              type="text"
+              maxlength="24"
+              placeholder="USERNAME"
+              autocomplete="username"
+              aria-label="Username"
+            >
+          </div>
+
+          <div id="mp-lobby-players" class="mp-lobby-players" aria-label="Players in room"></div>
+          <div id="mp-lobby-msg" class="mp-lobby-msg" aria-live="polite"></div>
+        </div>
+
+        <button type="button" class="pixel-btn mp-ready-btn" id="mp-ready">READY</button>
+        <button type="button" class="pixel-btn mp-start-btn" id="mp-start" hidden disabled>START</button>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

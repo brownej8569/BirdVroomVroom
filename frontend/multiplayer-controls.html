@@ -5,33 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BirdFighting - Multiplayer</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="script.js" defer></script>
 </head>
 <body>
-  <div class="screen controls-screen" data-control-page="multiplayer">
-    <div class="top-ui">
-      <button type="button" class="ui-btn" disabled aria-disabled="true">SCOREBOARD</button>
-      <button type="button" class="ui-btn pause-btn" onclick="pauseRobot()">STOP / PAUSE</button>
-      <div class="username-wrap">
-        <img src="/images/ID Bar.png" alt="Team name bar" class="username-bar">
-        <span id="team-name" class="username-text">Skipper</span>
-      </div>
-    </div>
+  <div class="screen multiplayer-controls-screen">
+    <button
+      type="button"
+      class="pixel-btn pixel-btn--sm nav-back"
+      onclick="goToPage('index.html')"
+      aria-label="Back"
+    >BACK</button>
 
-    <img src="/images/Finch.png" alt="Finch" class="finch controls-finch">
+    <main class="mpc-stage" aria-label="Multiplayer controls">
+      <section class="sp-topright" aria-label="Username and finch">
+        <div class="mpc-idbar-wrap" aria-hidden="true">
+          <img class="mpc-idbar" src="/images/Singleplayer/ID%20Bar.png" alt="" aria-hidden="true">
+          <input id="mpc-username" class="mpc-username-input" type="text" placeholder="USERNAME" maxlength="24" spellcheck="false" autocomplete="username" aria-label="Username">
+        </div>
+        <img class="sp-finch" src="/images/Singleplayer/1.png" alt="" aria-hidden="true">
+      </section>
 
-    <div class="controls-center">
-      <img src="/images/WASD.png" alt="WASD Controls" class="wasd-image">
-      <img src="/images/Spacebar.png" alt="Spacebar" class="spacebar-image">
-    </div>
+      <section class="mpc-controls" aria-label="Movement controls">
+        <div class="mpc-controls-wrap" aria-hidden="true">
+          <div class="mpc-wasd" aria-label="WASD cluster">
+            <button type="button" class="mpc-keybtn mpc-keybtn--w">W</button>
+            <button type="button" class="mpc-keybtn mpc-keybtn--a">A</button>
+            <button type="button" class="mpc-keybtn mpc-keybtn--s">S</button>
+            <button type="button" class="mpc-keybtn mpc-keybtn--d">D</button>
+          </div>
 
-    <div class="output-panel">
-      <p id="output">Use keyboard WASD to move, Space to boost. Finch test:</p>
-      <button type="button" class="test-btn" onclick="runScript('first_finch_test')">Run Finch Test</button>
-    </div>
+          <button type="button" class="mpc-keybtn mpc-keybtn--space">SPACEBAR</button>
+        </div>
+      </section>
 
-    <button type="button" class="back-btn" onclick="goToPage('multiplayer-join.html')">Back</button>
+      <section class="mpc-panel" aria-label="Finch connection panel">
+        <div class="mpc-panel-title">MULTIPLAYER</div>
+        <div class="mpc-panel-body">
+          <div id="mpc-room-display" class="mpc-room-display" aria-live="polite"></div>
+          <div class="mpc-panel-text">Click RUN FINCH TEST to verify connection.</div>
+          <div id="mpc-output" class="mpc-output" aria-live="polite">Not tested.</div>
+          <div class="mpc-actions">
+            <button type="button" class="pixel-btn pixel-btn--danger pixel-btn--sm" id="mpc-finch-test">RUN FINCH TEST</button>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 </body>
 </html>
+

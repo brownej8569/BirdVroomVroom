@@ -3,32 +3,48 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BirdFighting - Join Room</title>
+  <title>BirdFighting - Multiplayer</title>
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
 </head>
 <body>
-  <div class="screen join-screen">
+  <div class="screen multiplayer-screen">
+    <button
+      type="button"
+      class="pixel-btn pixel-btn--sm nav-back"
+      onclick="goToPage('index.html')"
+      aria-label="Back"
+    >BACK</button>
 
-    <img src="/images/Finch.png" alt="Finch" class="finch join-finch">
+    <main class="mp-stage" aria-label="Multiplayer">
+      <section class="sp-topright" aria-label="Finch">
+        <img class="sp-finch" src="/images/Singleplayer/1.png" alt="" aria-hidden="true">
+      </section>
 
-    <div class="join-panel">
-      <img src="/images/Join.png" alt="Create or Join Room" class="join-image">
-      <img src="/images/ID Bar.png" alt="Room ID Bar" class="idbar-image">
+      <section class="mp-center" aria-label="Multiplayer menu">
+        <div class="mp-actions" role="group" aria-label="Room actions">
+          <button type="button" class="pixel-btn mp-btn" id="mp-create">CREATE ROOM</button>
+          <button type="button" class="pixel-btn mp-btn" id="mp-join">JOIN ROOM</button>
+        </div>
 
-      <input
-        type="text"
-        id="roomCode"
-        class="room-input"
-        placeholder="Enter Room Code"
-        maxlength="12"
-      >
+        <div class="mp-codebar" aria-label="Room code">
+          <input
+            id="mp-code"
+            class="mp-code-input"
+            type="text"
+            inputmode="text"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="6"
+            placeholder="ROOM CODE"
+            aria-label="Room code"
+          >
+        </div>
 
-      <button class="hotspot create-room-hotspot" onclick="createRoom()" aria-label="Create Room"></button>
-      <button class="hotspot join-room-hotspot" onclick="joinRoom()" aria-label="Join Room"></button>
-    </div>
-
-    <button class="back-btn" onclick="goToPage('index.html')">Back</button>
+        <div id="mp-status" class="mp-status" aria-live="polite"></div>
+      </section>
+    </main>
   </div>
 </body>
 </html>
+
