@@ -5,11 +5,9 @@ import threading
 import time
 
 finch = Finch('A')
-#keys_active = set()
 app = Flask(__name__, template_folder='frontend')
 socketio = SocketIO(app, cors_allowed_origins="*")
 avoid_obstacle = False
-#CORS(app)
 
 # given state of whether the control buttons are pressed down or not
 control_state = {"w" : False,
@@ -40,19 +38,6 @@ def control_stuff(data):
     
     if key in control_state:
         control_state[key] = pressed
-
-#@app.route('/controller', methods=['POST'])
-#def controller():
-#    data = request.json
-#    key = data.get('key')
-#    pressed = data.get('pressed')
-#
-#    if pressed:
-#        keys_active.add(key.lower())
-#    else:
-#        keys_active.discard(key.lower())
-#        
-#    return jsonify({"status": "ok"})
 
 def inputs():
     prev_left = None
@@ -157,24 +142,4 @@ if __name__ == '__main__':
     threading.Thread(target=inputs, daemon=True).start()
     threading.Thread(target=sensors, daemon=True).start()
     socketio.run(app, debug=True, use_reloader=False)
-
-#@app.route('/first_finch_test', methods=['POST'])
-#def first_finch_test():
-#    script_path = os.path.join('backend', 'meow.py')
-#    try:
-#        result = subprocess.check_output(
-#            [sys.executable, script_path],
-#            text=True,
-#            stderr=subprocess.STDOUT
-#        )
-#        return jsonify({"status": "success", "output": result.strip()})
-#
-#    except FileNotFoundError:
-#        error_msg = f"Error: The file '{script_path}' was not found."
-#        print(error_msg)
-#        return jsonify({"status": "error", "message": error_msg}), 500
-#
-#    except Exception as e:
-#        print(f"General Error: {str(e)}")
-#        return jsonify({"status": "error", "message": f"Server error: {str(e)}"}), 500
 

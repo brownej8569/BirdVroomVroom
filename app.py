@@ -148,14 +148,19 @@ def debug_routes():
 def _create_finch():
     if Finch is None:
         return None
+    print("FINCH CREATE: attempting Finch('A')")
     try:
-        return Finch("A")
+        f = Finch("A")
+        print("FINCH CREATE: Finch('A') object created")
+        return f
     except BaseException:
+        print("FINCH CREATE: failed to create Finch('A')")
         return None
 
 
 finch = _create_finch()
 avoid_obstacle = False
+_MOTOR_THREADS_STARTED = False
 
 # Given state of whether the control buttons are pressed down or not
 control_state = {
@@ -185,27 +190,73 @@ def finch_test():
     Lightweight connectivity sanity check for the UI.
     Must never crash the server if Finch isn't connected.
     """
+    global finch
     try:
+        print("FINCH TEST ROUTE HIT")
+        print("FINCH AVAILABLE:", finch is not None)
         if finch is None:
-            return jsonify({"message": "Finch test: Finch not detected (check USB/Bluetooth)."}), 200
+            finch = _create_finch()
+        if finch is None:
+            return jsonify(
+                {
+                    "ok": False,
+                    "message": "Finch test: Finch object missing (not detected).",
+                }
+            ), 200
 
-        # Try a couple safe calls; if hardware isn't present this may throw.
+        print("FINCH TEST: attempting getDistance()")
+        distance = None
         try:
             distance = finch.getDistance()
-        except Exception:
-            distance = None
+        except Exception as e:
+            err = str(e)
+            if "device is not connected" in err.lower():
+                return jsonify(
+                    {
+                        "ok": False,
+                        "message": "Finch test: Finch object exists but device is not connected.",
+                        "detail": err,
+                    }
+                ), 200
+            if any(s in err.lower() for s in ["access", "denied", "busy", "in use", "exclusive"]):
+                return jsonify(
+                    {
+                        "ok": False,
+                        "message": "Finch test: Finch command failed (robot may be busy/locked by another app).",
+                        "detail": err,
+                    }
+                ), 200
+            return jsonify({"ok": False, "message": "Finch test: Finch command failed.", "detail": err}), 200
 
         try:
+            print("FINCH TEST: attempting stop()")
             finch.stop()
-        except Exception:
-            pass
+        except Exception as e:
+            # If this fails, keep it as detail but don't claim success.
+            return jsonify(
+                {
+                    "ok": False,
+                    "message": "Finch test: Finch responded, but stop() failed.",
+                    "detail": str(e),
+                }
+            ), 200
 
-        if distance is None:
-            return jsonify({"message": "Finch test: Finch not detected (check USB/Bluetooth)."}), 200
-
-        return jsonify({"message": f"Finch test: OK (distance={distance})."}), 200
+        _ensure_motor_threads()
+        return jsonify(
+            {
+                "ok": True,
+                "message": "Finch test: OK (Finch detected and responsive).",
+                "detail": f"distance={distance}",
+            }
+        ), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify(
+            {
+                "ok": False,
+                "message": "Finch test: Finch connection failed.",
+                "detail": str(e),
+            }
+        ), 200
 
 
 @app.route("/api/mp/create", methods=["POST"])
@@ -467,7 +518,7 @@ def inputs():
 
         if boost:
             move_speed = 100
-            turn_speed = 50
+            turn_speed = 100
 
         if forward:
             left_speed += move_speed
@@ -489,7 +540,11 @@ def inputs():
         right_speed = max(-100, min(100, right_speed))
 
         if left_speed != prev_left or right_speed != prev_right:
-            finch.setMotors(left_speed, right_speed)
+            try:
+                print(f"FINCH MOVE: setMotors({left_speed}, {right_speed})")
+                finch.setMotors(left_speed, right_speed)
+            except Exception as e:
+                print("FINCH MOVE ERROR:", str(e))
             prev_left = left_speed
             prev_right = right_speed
 
@@ -505,17 +560,24 @@ def sensors():
     prev_incline = [""] * 10
 
     while True:
-        distance = finch.getDistance()
-        left_line = finch.getLine("L")
-        right_line = finch.getLine("R")
+        try:
+            distance = finch.getDistance()
+            left_line = finch.getLine("L")
+            right_line = finch.getLine("R")
+            orientation = finch.getOrientation()
+        except Exception as e:
+            print("FINCH SENSOR ERROR:", str(e))
+            time.sleep(0.2)
+            continue
         incline_state = ""
 
-        prev_incline = prev_incline[1:] + [finch.getOrientation()]
+        prev_incline = prev_incline[1:] + [orientation]
         last_ten_level = sum(1 for x in prev_incline if x == "Level")
 
         incline_state = "Level" if last_ten_level > 6 else "In between"
 
         if distance < 15:
+            print(f"FINCH OBSTACLE: distance={distance} < 15 → backing up")
             avoid_obstacle = True
             finch.stop()
             finch.playNote(60, 1)
@@ -525,6 +587,7 @@ def sensors():
             avoid_obstacle = False
 
         if left_line < 50 or right_line < 50:
+            print(f"FINCH LINE: left={left_line} right={right_line} → stop + LEDs + beep")
             finch.playNote(40, 1)
             finch.setBeak(100, 100, 0)
             finch.setTail("all", 100, 100, 0)
@@ -536,6 +599,16 @@ def sensors():
             finch.setDisplay([0] * 25)
 
         time.sleep(0.05)
+
+
+def _ensure_motor_threads() -> None:
+    """Start motor/sensor loops once Finch is available (startup or after a successful test)."""
+    global _MOTOR_THREADS_STARTED
+    if finch is None or _MOTOR_THREADS_STARTED:
+        return
+    _MOTOR_THREADS_STARTED = True
+    threading.Thread(target=inputs, daemon=True).start()
+    threading.Thread(target=sensors, daemon=True).start()
 
 
 @app.route("/first_finch_test", methods=["POST"])
@@ -623,8 +696,6 @@ def pages(page: str):
 
 
 if __name__ == "__main__":
-    if finch is not None:
-        threading.Thread(target=inputs, daemon=True).start()
-        threading.Thread(target=sensors, daemon=True).start()
+    _ensure_motor_threads()
 
     socketio.run(app, debug=True, use_reloader=False, allow_unsafe_werkzeug=True)

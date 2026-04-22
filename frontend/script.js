@@ -38,7 +38,15 @@ function seedMpDisplayNameIfNeeded() {
   }
 }
 
+function finchTestResultText(data) {
+  if (!data || typeof data !== "object") return "Finch test complete.";
+  const parts = [data.message || "Finch test complete."];
+  if (data.detail) parts.push(String(data.detail));
+  return parts.join("\n");
+}
+
 async function runFinchTest() {
+  console.log("[singleplayer] RUN FINCH TEST clicked");
   const out = document.getElementById("sp-output");
   if (out) out.textContent = "Running Finch test...";
 
@@ -46,13 +54,98 @@ async function runFinchTest() {
     const res = await fetch("/api/finch/test", { method: "POST" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data?.error || `HTTP ${res.status}`);
+      throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
     }
-    if (out) out.textContent = data?.message || "Finch test complete.";
+    if (out) out.textContent = finchTestResultText(data);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (out) out.textContent = `Finch test failed: ${msg}`;
+    if (out) out.textContent = `Finch connection failed.\n${msg}`;
   }
+}
+
+function initSingleplayerFinchControls() {
+  const root = document.querySelector(".singleplayer-screen");
+  if (!root || typeof io === "undefined") return;
+  if (root.dataset.spFinchControls === "1") return;
+  root.dataset.spFinchControls = "1";
+
+  const socket = io();
+  const controlKeys = new Set(["w", "a", "s", "d", "shift", "space"]);
+
+  const isTypingFocus = () => {
+    const el = document.activeElement;
+    if (!el) return false;
+    const tag = (el.tagName || "").toLowerCase();
+    return tag === "input" || tag === "textarea" || tag === "select" || Boolean(el.isContentEditable);
+  };
+
+  const normalizeKey = (e) => {
+    const k = e.key;
+    if (k === " " || k === "Spacebar") return "space";
+    if (k === "Shift") return "shift";
+    if (k.length === 1) return k.toLowerCase();
+    return null;
+  };
+
+  const emitControl = (key, pressed) => {
+    socket.emit("control_stuff", { currkey: key, pressed });
+  };
+
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (!document.body.contains(root)) return;
+      if (isTypingFocus()) return;
+      const nk = normalizeKey(e);
+      if (!nk || !controlKeys.has(nk)) return;
+      if (e.repeat) return;
+      if (nk === "space") e.preventDefault();
+      emitControl(nk, true);
+    },
+    true
+  );
+
+  document.addEventListener(
+    "keyup",
+    (e) => {
+      if (!document.body.contains(root)) return;
+      if (isTypingFocus()) return;
+      const nk = normalizeKey(e);
+      if (!nk || !controlKeys.has(nk)) return;
+      if (nk === "space") e.preventDefault();
+      emitControl(nk, false);
+    },
+    true
+  );
+
+  window.addEventListener("blur", () => {
+    for (const key of controlKeys) emitControl(key, false);
+  });
+
+  const btnKeyFor = (btn) => {
+    if (btn.classList.contains("sp-keybtn--w")) return "w";
+    if (btn.classList.contains("sp-keybtn--a")) return "a";
+    if (btn.classList.contains("sp-keybtn--s")) return "s";
+    if (btn.classList.contains("sp-keybtn--d")) return "d";
+    if (btn.classList.contains("sp-keybtn--space")) return "space";
+    return null;
+  };
+
+  root.querySelectorAll(".sp-keybtn").forEach((btn) => {
+    const key = btnKeyFor(btn);
+    if (!key) return;
+    const up = (ev) => {
+      ev.preventDefault();
+      emitControl(key, false);
+    };
+    btn.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      emitControl(key, true);
+    });
+    btn.addEventListener("pointerup", up);
+    btn.addEventListener("pointerleave", up);
+    btn.addEventListener("pointercancel", up);
+  });
 }
 
 function initSingleplayerPage() {
@@ -73,6 +166,8 @@ function initSingleplayerPage() {
       }
     });
   }
+
+  initSingleplayerFinchControls();
 }
 
 function initMultiplayerEntryPage() {
@@ -357,10 +452,10 @@ function initMultiplayerControlsPage() {
         const res = await fetch("/api/finch/test", { method: "POST" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-        if (out) out.textContent = data?.message || "Finch test complete.";
+        if (out) out.textContent = finchTestResultText(data);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        if (out) out.textContent = `Finch test failed: ${msg}`;
+        if (out) out.textContent = `Finch connection failed.\n${msg}`;
       }
     });
   }
