@@ -698,4 +698,13 @@ def pages(page: str):
 if __name__ == "__main__":
     _ensure_motor_threads()
 
-    socketio.run(app, debug=True, use_reloader=False, allow_unsafe_werkzeug=True)
+    host = os.environ.get("BIRDBRAIN_HOST", "127.0.0.1")
+    port = int(os.environ.get("BIRDBRAIN_PORT", "5001"))
+    socketio.run(
+        app,
+        host=host,
+        port=port,
+        debug=True,
+        use_reloader=False,
+        allow_unsafe_werkzeug=True,
+    )
